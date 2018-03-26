@@ -61,7 +61,10 @@ def testWord2Vec():
     dict = Dictionary()
     dict.doc2bow(model.vocab.keys(), allow_update=True)
     w2indx = {v: k + 1 for k, v in dict.items()}
-    print(type(w2indx))
+    print(len(w2indx))
+
+
+
 
 if __name__ == '__main__':
     testWord2Vec()
