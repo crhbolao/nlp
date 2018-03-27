@@ -5,7 +5,9 @@
 # Date: 2018/3/21 15:47
 # Version: V1.0
 # To change this template use File | Settings | File Templates.
-# Description:  LSTM 实现中文情感分析
+# Description:  LSTM 实现中文情感分析 ，并让 python 程序和java程序之间通过RPC通信交互！
+
+
 import os
 
 # os.environ['KERAS_BACKEND'] = 'theano'
@@ -14,7 +16,6 @@ import multiprocessing
 import numpy as np
 from gensim.models.word2vec import Word2Vec
 from gensim.corpora.dictionary import Dictionary
-
 from keras.preprocessing import sequence
 from keras.models import Sequential
 from keras.layers.embeddings import Embedding
@@ -25,6 +26,7 @@ import jieba
 import pandas as pd
 import sentiment_analysis.config as config
 import yaml
+from xmlrpc.server import SimpleXMLRPCServer
 
 
 class LSTM:
@@ -56,6 +58,17 @@ class LSTM:
         self.input_length = 100
         self.batch_size = 50  # 批数据大小
         self.n_epoch = 10  # 设置的数据批次
+
+        print('加载训练好的数据模型...')
+        # 加载 lstm 的网络模型
+        with open(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.yml'), 'r') as f:
+            modelStr = yaml.load(f)
+        self.model = model_from_yaml(modelStr)
+
+        print("加载训练好的模型参数...")
+        # 加载 lstm 模型的权值参数
+        self.model.load_weights(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.h5'))
+        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def loadFile(self):
         '''
@@ -224,7 +237,7 @@ class LSTM:
         _, _, combined = self.buildDic(model, words)
         return combined
 
-    def lstmPre(self, model, string):
+    def lstmPre(self, string):
         '''
         lstm模型预测
         :param string:待预测的文本
@@ -233,19 +246,22 @@ class LSTM:
 
         data = self.parseStr(string)
         data.reshape(1, -1)
-        result = model.predict_classes(data)
+        result = self.model.predict_classes(data)
         if result[0][0] == 1:
-            print("该文本是正面的！")
+            str = "该文本是正面的！"
         else:
-            print('该文本是负面的！')
+            str = '该文本是负面的！'
+        return str
 
 
 if __name__ == '__main__':
-    # train()
     lstm = LSTM()
-    model = lstm.init()
-    string = "我特别讨厌别人说居然离开银行去保险公司，目光短浅！"
-    string2 = "真是太好用了"
-    lstm.lstmPre(model, string)
-    lstm.lstmPre(model, string2)
+    server = SimpleXMLRPCServer(("192.168.102.38", 8888))
+    server.register_instance(lstm)
+    print("Listening on port 8888........")
+    server.serve_forever()
+    # string = "我特别讨厌别人说居然离开银行去保险公司，目光短浅！"
+    # string2 = "真是太好用了"
+    # lstm.lstmPre(string)
+    # lstm.lstmPre(string2)
     pass
