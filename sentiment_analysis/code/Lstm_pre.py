@@ -10,7 +10,6 @@
 
 import os
 
-# os.environ['KERAS_BACKEND'] = 'theano'
 from sklearn.model_selection import train_test_split
 import multiprocessing
 import numpy as np
@@ -176,18 +175,6 @@ class LSTM:
         :return:
         '''
         model = Sequential()
-        # model.add(Embedding(output_dim=vocab_dim,
-        #                     input_dim=n_symbols,
-        #                     mask_zero=True,
-        #                     weights=[embedding_weights],
-        #                     input_length=input_length))
-        # model.add(LSTM(output_dim=50, activation='sigmoid', inner_activation='hard_sigmoid'))
-        # model.add(Dropout(0.5))
-        # model.add(Dense(1))
-        # model.add(Activation('sigmoid'))
-        # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-        # model.fit(train_x, train_y, batch_size=batch_size, nb_epoch=n_epoch, verbose=1, validation_data=(text_x, test_y), show_accuracy=True)
-        # score = model.evaluate(text_x, test_y, batch_size=batch_size)
         model.add(Embedding(output_dim=self.vocab_dim, input_dim=n_symbols, input_length=self.input_length))
         model.add(Dropout(0.2))
         model.add(LSTM(self.vocab_dim))
