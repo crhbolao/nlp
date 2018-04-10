@@ -81,7 +81,7 @@ def fileRemove(DirPath):
         for line in fileLines:
             process_bar.show_process()
             if line not in uniqueLines:
-                uniqueLines.append(line.replace("\r", "").strip())
+                uniqueLines.append(line)
         process_bar.close('%s文件去重操作处理完毕' % str(dir))
 
         # 创建新的文件
@@ -94,7 +94,7 @@ def fileRemove(DirPath):
         ShowProcess(uniqueLines.__len__())
         for line in uniqueLines:
             process_bar.show_process()
-            newfile.write(line + '\n')
+            newfile.write(line.replace("\r", "").strip() + '\n')
         process_bar.close('新的%s文件保存完毕' % str(newName + nowtime + postfix))
         newfile.close()
 
