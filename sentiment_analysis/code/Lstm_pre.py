@@ -25,6 +25,7 @@ import jieba
 import pandas as pd
 import sentiment_analysis.config as config
 import yaml
+import json
 from xmlrpc.server import SimpleXMLRPCServer
 
 
@@ -174,6 +175,8 @@ class LSTMPre:
         :return:
         '''
         model = Sequential()
+
+        # 后端是 Thean 的文本预测
         # model.add(Embedding(output_dim=vocab_dim,
         #                     input_dim=n_symbols,
         #                     mask_zero=True,
@@ -187,6 +190,7 @@ class LSTMPre:
         # model.fit(train_x, train_y, batch_size=batch_size, nb_epoch=n_epoch, verbose=1, validation_data=(text_x, test_y), show_accuracy=True)
         # score = model.evaluate(text_x, test_y, batch_size=batch_size)
 
+        # 后端是tensorflow
         model.add(Embedding(output_dim=self.vocab_dim, input_dim=n_symbols, input_length=self.input_length))
         model.add(Dropout(0.2))
         model.add(LSTM(self.vocab_dim))
@@ -246,17 +250,31 @@ class LSTMPre:
 
         data = self.parseStr(string)
         data.reshape(1, -1)
-        result = model.predict_classes(data)
-        if result[0][0] == 1:
-            str = "该文本是正面的！"
+        zero_num = np.sum(data == 0)
+        if zero_num > 30:
+            str = "该文本是中性的!"
         else:
-            str = '该文本是负面的！'
+            result = model.predict_classes(data)
+            if result[0][0] == 1:
+                str = "该文本是正面的！"
+            else:
+                str = '该文本是负面的！'
         return str
+
+    def readFile(self, filePath):
+        '''
+        读取本地测试文件并进行文本正负判断
+        :param filePath:
+        :return:
+        '''
+        file = open(filePath, encoding='utf-8')
+        fileLines = file.readlines()
+        return fileLines
 
 
 if __name__ == '__main__':
     lstm = LSTMPre()
-    # lstm.train()
+    lstm.train()
 
     # python rpc 启动监听
     # server = SimpleXMLRPCServer(("192.168.102.38", 8888))
@@ -264,11 +282,25 @@ if __name__ == '__main__':
     # print("Listening on port 8888........")
     # server.serve_forever()
 
-    # 模型进行预测
-    string = "我特别讨厌别人说居然离开银行去保险公司，目光短浅！"
-    # string2 = "真是太好用了"
-    # lstm.lstmPre(string)
-    model = lstm.init()
-    res = lstm.lstmPre(string, model)
-    print(res)
+    # # 模型进行预测
+    # string = "我特别讨厌别人说居然离开银行去保险公司，目光短浅！"
+    # # string2 = "真是太好用了"
+    # # lstm.lstmPre(string)
+    # model = lstm.init()
+    # res = lstm.lstmPre(string, model)
+    # print(res)
+
+    # filePath = r'C:\Users\sssd\Desktop\data\zhongxin.json'
+    # lines = lstm.readFile(filePath)
+    # model = lstm.init()
+    # i = 0
+    # for line in lines:
+    #     i += 1
+    #     try:
+    #         json_loads = json.loads(line)
+    #         tempStr = json_loads['title'] + json_loads['content']
+    #         res = lstm.lstmPre(tempStr, model)
+    #         print('第%d行预测结果：--- %s' % (i, res))
+    #     except:
+    #         continue
     pass
