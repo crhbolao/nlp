@@ -94,7 +94,8 @@ def fileRemove(DirPath):
         ShowProcess(uniqueLines.__len__())
         for line in uniqueLines:
             process_bar.show_process()
-            newfile.write(line.replace("\r", "").strip() + '\n')
+            if line == '':
+                newfile.write(line.replace("\r", "").strip() + '\n')
         process_bar.close('新的%s文件保存完毕' % str(newName + nowtime + postfix))
         newfile.close()
 

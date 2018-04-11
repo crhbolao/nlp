@@ -28,7 +28,7 @@ import yaml
 from xmlrpc.server import SimpleXMLRPCServer
 
 
-class LSTM:
+class LSTMPre:
 
     def init(self):
         print('加载训练好的数据模型...')
@@ -56,26 +56,26 @@ class LSTM:
         self.vocab_dim = 100  # 权值向量的维度
         self.input_length = 100
         self.batch_size = 50  # 批数据大小
-        self.n_epoch = 10  # 设置的数据批次
+        self.n_epoch = 3  # 设置的数据批次
 
-        print('加载训练好的数据模型...')
-        # 加载 lstm 的网络模型
-        with open(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.yml'), 'r') as f:
-            modelStr = yaml.load(f)
-        self.model = model_from_yaml(modelStr)
-
-        print("加载训练好的模型参数...")
-        # 加载 lstm 模型的权值参数
-        self.model.load_weights(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.h5'))
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # print('加载训练好的数据模型...')
+        # # 加载 lstm 的网络模型
+        # with open(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.yml'), 'r') as f:
+        #     modelStr = yaml.load(f)
+        # self.model = model_from_yaml(modelStr)
+        #
+        # print("加载训练好的模型参数...")
+        # # 加载 lstm 模型的权值参数
+        # self.model.load_weights(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.h5'))
+        # self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def loadFile(self):
         '''
         加载训练数据
         :return:    合并后的数据，以及数据对应的标签
         '''
-        neg = pd.read_excel(os.path.join(config.BASH_PATH, 'data', 'neg.xls'), header=None, index=None)
-        pos = pd.read_excel(os.path.join(config.BASH_PATH, 'data', 'pos.xls'), header=None, index=None)
+        neg = pd.read_excel(os.path.join(config.BASH_PATH, 'data', 'neg.xlsx'), header=None, index=None)
+        pos = pd.read_excel(os.path.join(config.BASH_PATH, 'data', 'pos.xlsx'), header=None, index=None)
         data = np.concatenate((pos[0], neg[0]))
         label = np.concatenate((np.ones(len(pos), dtype=int), np.zeros(len(neg[0]), dtype=int)))
         print("输入的数据类型为：%s，格式为：%s。输出的数据类型为：%s，格式为：%s。" % (str(type(data)), str(data.shape), str(type(label)), str(label.shape)))
@@ -159,15 +159,14 @@ class LSTM:
         embedding_weights = np.zeros((n_symbols, self.vocab_dim))
         for word, index in indexDict.items():
             embedding_weights[index, :] = wordVectors[word]
-        train_x, text_x, train_y, test_y = train_test_split(combined, y, test_size=0.2)
+        train_x, text_x, train_y, test_y = train_test_split(combined, y, test_size=0.3)
         print("交叉验证后训练的数据类型为%s，数据格式为%s。测试的数据类型为%s，数据格式为%s。" % (str(type(train_x)), str(train_x.shape), str(type(text_x)), str(text_x.shape)))
         return n_symbols, embedding_weights, train_x, text_x, train_y, test_y
 
-    def train_lstm(self, n_symbols, embedding_weights, train_x, text_x, train_y, test_y):
+    def train_lstm(self, n_symbols, train_x, text_x, train_y, test_y):
         '''
         keras lstm 训练模型
         :param n_symbols:大或等于0的整数，字典长度，即输入数据最大下标+1
-        :param embedding_weights:初始化权值
         :param train_x:训练集x
         :param text_x:测试集x
         :param train_y:训练集y
@@ -175,6 +174,19 @@ class LSTM:
         :return:
         '''
         model = Sequential()
+        # model.add(Embedding(output_dim=vocab_dim,
+        #                     input_dim=n_symbols,
+        #                     mask_zero=True,
+        #                     weights=[embedding_weights],
+        #                     input_length=input_length))
+        # model.add(LSTM(output_dim=50, activation='sigmoid', inner_activation='hard_sigmoid'))
+        # model.add(Dropout(0.5))
+        # model.add(Dense(1))
+        # model.add(Activation('sigmoid'))
+        # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # model.fit(train_x, train_y, batch_size=batch_size, nb_epoch=n_epoch, verbose=1, validation_data=(text_x, test_y), show_accuracy=True)
+        # score = model.evaluate(text_x, test_y, batch_size=batch_size)
+
         model.add(Embedding(output_dim=self.vocab_dim, input_dim=n_symbols, input_length=self.input_length))
         model.add(Dropout(0.2))
         model.add(LSTM(self.vocab_dim))
@@ -185,6 +197,7 @@ class LSTM:
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
         model.fit(train_x, train_y, batch_size=self.batch_size, nb_epoch=self.n_epoch, verbose=1, validation_data=(text_x, test_y))
         score = model.evaluate(text_x, test_y, batch_size=self.batch_size)
+
         yaml_string = model.to_yaml()
         with open(os.path.join(config.BASH_PATH, 'lstm_data', 'lstm.yml'), 'w') as outfile:
             outfile.write(yaml.dump(yaml_string, default_flow_style=True))
@@ -206,7 +219,7 @@ class LSTM:
         print("lstm训练模型初始化...")
         n_symbols, embedding_weights, train_x, text_x, train_y, test_y = self.getData(index_dict, word_vectors, combined, label)
         print("开始训练lstm...")
-        self.train_lstm(n_symbols, embedding_weights, train_x, text_x, train_y, test_y)
+        self.train_lstm(n_symbols, train_x, text_x, train_y, test_y)
 
     def parseStr(self, string):
         '''
@@ -224,7 +237,7 @@ class LSTM:
         _, _, combined = self.buildDic(model, words)
         return combined
 
-    def lstmPre(self, string):
+    def lstmPre(self, string, model):
         '''
         lstm模型预测
         :param string:待预测的文本
@@ -233,7 +246,7 @@ class LSTM:
 
         data = self.parseStr(string)
         data.reshape(1, -1)
-        result = self.model.predict_classes(data)
+        result = model.predict_classes(data)
         if result[0][0] == 1:
             str = "该文本是正面的！"
         else:
@@ -242,13 +255,20 @@ class LSTM:
 
 
 if __name__ == '__main__':
-    lstm = LSTM()
-    server = SimpleXMLRPCServer(("192.168.102.38", 8888))
-    server.register_instance(lstm)
-    print("Listening on port 8888........")
-    server.serve_forever()
-    # string = "我特别讨厌别人说居然离开银行去保险公司，目光短浅！"
+    lstm = LSTMPre()
+    # lstm.train()
+
+    # python rpc 启动监听
+    # server = SimpleXMLRPCServer(("192.168.102.38", 8888))
+    # server.register_instance(lstm)
+    # print("Listening on port 8888........")
+    # server.serve_forever()
+
+    # 模型进行预测
+    string = "我特别讨厌别人说居然离开银行去保险公司，目光短浅！"
     # string2 = "真是太好用了"
     # lstm.lstmPre(string)
-    # lstm.lstmPre(string2)
+    model = lstm.init()
+    res = lstm.lstmPre(string, model)
+    print(res)
     pass
