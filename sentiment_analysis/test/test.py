@@ -6,6 +6,7 @@
 # Version: V1.0
 # To change this template use File | Settings | File Templates.
 # Description:
+import re
 
 __author__ = 'sssd'
 
@@ -64,8 +65,9 @@ def testWord2Vec():
     print(len(w2indx))
 
 
-
-
 if __name__ == '__main__':
-    testWord2Vec()
+    print('江苏 » 无锡\n市:婚礼\n司仪roger')
+    r1 = u'[a-zA-Z0-9’!"#$%&\'()*+,-./:;<=>?@，。»?★、…【】 \n《》？“”‘’！[\\]^_`{|}~]+'
+    new_str = re.sub(r1, '', '江苏 » 无锡\n市:婚礼\n司仪roger')
+    print(new_str)
     pass

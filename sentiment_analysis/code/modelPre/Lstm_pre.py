@@ -57,7 +57,7 @@ class LSTMPre:
         self.vocab_dim = 100  # 权值向量的维度
         self.input_length = 100
         self.batch_size = 50  # 批数据大小
-        self.n_epoch = 3  # 设置的数据批次
+        self.n_epoch = 10  # 设置的数据批次
 
         # print('加载训练好的数据模型...')
         # # 加载 lstm 的网络模型
